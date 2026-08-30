@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    /* strict is on deliberately: the API contract is mirrored by hand in
+       src/lib/types.ts, and strict null checking is what catches a drift
+       between the Python schema and the TypeScript type at compile time. */
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    /* Path alias so imports read as `@/lib/api` rather than `../../../lib/api`.
+       Forward slashes work on Windows too - this is a TS-level alias, not a
+       filesystem path. */
+    "paths": { "@/*": ["./src/*"] }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}

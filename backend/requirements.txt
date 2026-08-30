@@ -1,0 +1,45 @@
+# ---------------------------------------------------------------------------
+# RecoverAI -- backend dependencies
+#
+# Selection rules (they are the reason this list is short):
+#   1. Every package must ship prebuilt Windows wheels for CPython 3.10-3.13.
+#      Nothing here needs a C compiler, so `pip install -r requirements.txt`
+#      works on a stock Windows laptop with no build tools installed.
+#   2. Upper bounds are pinned to the next major version. A transitive breaking
+#      change should not be able to break a submitted project months later.
+#   3. No package is required for the demo to run. Missing Gemini credentials
+#      degrade to the rule-based planner; missing Razorpay credentials degrade
+#      to the simulated gateway. See docs/06-SETUP.md.
+# ---------------------------------------------------------------------------
+
+# --- Web framework -------------------------------------------------------
+fastapi>=0.115,<0.130
+uvicorn>=0.30,<1.0
+watchfiles>=0.24,<2.0          # Required by `uvicorn --reload`; ships win_amd64 wheels
+
+# --- Validation & configuration ------------------------------------------
+pydantic>=2.9,<3.0
+pydantic-settings>=2.5,<3.0
+python-dotenv>=1.0,<2.0
+
+# --- Persistence ---------------------------------------------------------
+sqlalchemy>=2.0.30,<2.1        # 2.0 typed ORM (Mapped[...]); sqlite3 is in the stdlib
+
+# --- HTTP client ---------------------------------------------------------
+# One HTTP client for the whole project: Razorpay's REST API and Starlette's
+# TestClient both use it, so there is no second transport to configure or debug.
+httpx>=0.27,<0.29
+
+# --- Machine learning ----------------------------------------------------
+scikit-learn>=1.5,<2.0
+pandas>=2.2,<3.0
+numpy>=1.26,<3.0
+joblib>=1.4,<2.0               # Model artefact serialisation
+
+# --- LLM -----------------------------------------------------------------
+# Google's current Gen AI SDK. Pure Python. If it is unavailable or unconfigured
+# the agent falls back to the deterministic planner -- the import is guarded.
+google-genai>=1.0,<2.0
+
+# --- Testing -------------------------------------------------------------
+pytest>=8.3,<9.0

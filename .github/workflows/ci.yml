@@ -1,0 +1,154 @@
+# ---------------------------------------------------------------------------
+# RecoverAI continuous integration.
+#
+# The Windows job is the point of this file. The README claims the project runs
+# on a stock Windows machine with no developer tooling, and a claim nobody checks
+# is a claim that quietly stops being true. This proves it on every push: the
+# same commands a reviewer would type, on the operating system they would type
+# them on.
+#
+# Everything runs against the zero-credential path -- no Gemini key, no Razorpay
+# key -- because that is the path a reviewer will actually exercise.
+# ---------------------------------------------------------------------------
+
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: Backend (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Keep going after one failure: knowing that a change breaks Windows but
+      # not Linux is far more useful than knowing only that something broke.
+      fail-fast: false
+      matrix:
+        # windows-latest is not decoration. It is the target machine.
+        os: [ubuntu-latest, windows-latest]
+        # The declared support range. 3.10 is the floor (union syntax, structural
+        # pattern matching); 3.13 is the newest with universal wheel coverage for
+        # scikit-learn and numpy.
+        python: ["3.10", "3.13"]
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run the test suite
+        run: python -m pytest -q
+
+      - name: Train the propensity model
+        # Trains on a reduced sample so CI stays quick. The point is that the
+        # trainer runs end to end and writes both artefacts, not that the metrics
+        # match a full run.
+        run: python -m app.ml.train --samples 4000
+
+      - name: Seed the demo database
+        run: python -m app.db.seed
+
+      - name: Start the API and verify it answers with zero credentials
+        # No GEMINI_API_KEY and no RAZORPAY_* are set anywhere in this workflow,
+        # so a green run is a live demonstration of the degraded-mode claim.
+        shell: python
+        run: |
+          import json
+          import subprocess
+          import sys
+          import time
+          import urllib.error
+          import urllib.request
+
+          server = subprocess.Popen(
+              [sys.executable, "-m", "uvicorn", "app.main:app",
+               "--host", "127.0.0.1", "--port", "8000"]
+          )
+          try:
+              # Poll rather than sleep a fixed amount: a fixed sleep is either
+              # flaky on a slow runner or wasted time on a fast one.
+              deadline = time.time() + 60
+              status = None
+              while time.time() < deadline:
+                  if server.poll() is not None:
+                      raise SystemExit(f"API exited early with code {server.returncode}")
+                  try:
+                      with urllib.request.urlopen("http://127.0.0.1:8000/api/status", timeout=2) as response:
+                          status = json.load(response)
+                      break
+                  except (urllib.error.URLError, OSError):
+                      time.sleep(1)
+
+              if status is None:
+                  raise SystemExit("The API never became reachable.")
+
+              print(json.dumps(status, indent=2))
+
+              # Assert the degraded modes are reported honestly rather than
+              # silently pretending to be live.
+              assert status["agent_mode"] == "rule_based", status["agent_mode"]
+              assert status["gateway_mode"] == "simulated", status["gateway_mode"]
+              assert status["ml_model_loaded"] is True, "the trained model should have loaded"
+
+              # And that the ledger seeded above verifies from genesis.
+              with urllib.request.urlopen("http://127.0.0.1:8000/api/audit/verify", timeout=10) as response:
+                  chain = json.load(response)
+              print(json.dumps(chain, indent=2))
+              assert chain["valid"] is True, chain
+          finally:
+              server.terminate()
+              try:
+                  server.wait(timeout=10)
+              except subprocess.TimeoutExpired:
+                  server.kill()
+
+  frontend:
+    name: Frontend (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # The floor declared in package.json's `engines`.
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        # `npm ci` rather than `npm install`: it installs exactly the lockfile and
+        # fails if package.json and the lockfile have drifted, which is precisely
+        # the breakage a reviewer would hit on a clean clone.
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build

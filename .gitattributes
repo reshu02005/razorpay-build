@@ -1,0 +1,15 @@
+# Normalise line endings so the project behaves identically on Windows and Unix.
+# Without this, a Windows checkout can rewrite shell scripts with CRLF and make
+# them unrunnable, which is a classic and very confusing cross-platform failure.
+* text=auto eol=lf
+
+# Windows batch files must keep CRLF -- cmd.exe mis-parses LF-only .bat files.
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Binary assets: never touch.
+*.png  binary
+*.jpg  binary
+*.ico  binary
+*.joblib binary

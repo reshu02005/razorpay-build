@@ -1,0 +1,230 @@
+/*
+ * Global stylesheet: Tailwind's layers plus the design tokens the theme in
+ * `tailwind.config.ts` reads through `hsl(var(--token))`.
+ *
+ * Values are stored as bare HSL triplets ("222 47% 11%") rather than complete
+ * colour functions. That is the shadcn convention and it exists for one concrete
+ * reason: a bare triplet can be composed with an alpha channel by Tailwind
+ * (`bg-danger/10` becomes `hsl(var(--danger) / 0.1)`), which a `#rrggbb` value
+ * cannot. Every token therefore works as a solid fill *and* as a wash.
+ *
+ * Palette intent -- light mode is primary. The neutral ramp is Tailwind's slate,
+ * a cool grey that reads as "developer console" rather than "enterprise portal".
+ * Accents are deliberately desaturated one step from the pure Tailwind hues so
+ * that a screen showing three statuses at once does not vibrate.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Neutral surfaces: white page, slate ink. Cards sit flush with the page and
+       are separated by a border, not a shadow -- fewer visual layers to parse. */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%; /* slate-900 */
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Muted is the quiet surface: table headers, empty states, meta text. */
+    --muted: 210 40% 96%; /* slate-100 */
+    --muted-foreground: 215 16% 47%; /* slate-500 */
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --border: 214 32% 91%; /* slate-200 */
+    --input: 214 32% 91%;
+    --ring: 215 20% 65%; /* slate-400 -- a focus ring should be visible, not loud */
+
+    /* Primary is near-black rather than a brand hue. The loudest thing on a
+       screen should be the operator's decision, not the navigation. */
+    --primary: 222 47% 11%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    /* emerald -- recovered money, guardrail ALLOW. */
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    --success-subtle: 152 76% 96%;
+    --success-strong: 163 88% 24%;
+
+    /* amber -- awaiting a human, REQUIRE_APPROVAL, degraded/simulated notices.
+       Amber is the "you need to look at this" colour and is never used for a
+       failure; conflating the two would make a queue of pending approvals read
+       as a page full of errors. */
+    --warning: 38 92% 50%;
+    --warning-foreground: 26 83% 10%;
+    --warning-subtle: 48 100% 96%;
+    --warning-strong: 26 90% 33%;
+
+    /* rose -- failed, denied, and destructive controls only. Reserving red for
+       genuine failure is what keeps it meaningful during an incident. */
+    --danger: 350 89% 60%;
+    --danger-foreground: 0 0% 100%;
+    --danger-subtle: 356 100% 97%;
+    --danger-strong: 345 83% 41%;
+
+    /* sky -- anything the model produced: rationale, classification, propensity.
+       Distinct from primary so machine output is never mistaken for a recorded
+       fact or a human decision. */
+    --ai: 199 89% 48%;
+    --ai-foreground: 0 0% 100%;
+    --ai-subtle: 204 100% 97%;
+    --ai-strong: 201 90% 30%;
+
+    /* Drives the whole borderRadius scale. 0.5rem is soft enough to feel calm
+       without tipping into a consumer-app look. */
+    --radius: 0.5rem;
+
+    /* Tells the browser to render native scrollbars, form controls and the
+       caret in light styling. Without it a dark-OS user sees dark widgets on a
+       light page. */
+    color-scheme: light;
+  }
+
+  .dark {
+    /* Not pure black: a very dark desaturated navy. Pure black next to white
+       text maximises halation, which is tiring to read for long stretches. */
+    --background: 222 47% 7%;
+    --foreground: 210 40% 96%;
+
+    --card: 222 44% 9%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 222 44% 9%;
+    --popover-foreground: 210 40% 96%;
+
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 65%; /* slate-400 */
+
+    --accent: 217 33% 16%;
+    --accent-foreground: 210 40% 96%;
+
+    --border: 216 30% 18%;
+    --input: 216 30% 20%;
+    --ring: 215 20% 45%;
+
+    /* Inverted, as in light mode: the primary control is the highest-contrast
+       thing on the page. */
+    --primary: 210 40% 98%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217 33% 16%;
+    --secondary-foreground: 210 40% 96%;
+
+    /* Accents shift lighter and lose saturation on a dark ground, where a
+       mid-tone hue would smear rather than read as a status. */
+    --success: 158 64% 52%;
+    --success-foreground: 155 90% 8%;
+    --success-subtle: 160 50% 12%;
+    --success-strong: 152 68% 70%;
+
+    --warning: 43 96% 56%;
+    --warning-foreground: 26 83% 8%;
+    --warning-subtle: 34 55% 13%;
+    --warning-strong: 45 93% 70%;
+
+    --danger: 351 95% 71%;
+    --danger-foreground: 344 80% 10%;
+    --danger-subtle: 350 45% 15%;
+    --danger-strong: 351 95% 80%;
+
+    --ai: 199 95% 64%;
+    --ai-foreground: 202 80% 8%;
+    --ai-subtle: 202 55% 14%;
+    --ai-strong: 199 95% 76%;
+
+    color-scheme: dark;
+  }
+
+  /* Tailwind's preflight defaults every border to `currentColor`, which makes a
+     bare `border` class inherit the text colour. Pinning it to the token means
+     `border` alone is always the correct hairline in both themes. */
+  *,
+  ::before,
+  ::after {
+    border-color: hsl(var(--border));
+  }
+
+  html {
+    /* Stops iOS/Edge inflating text in landscape. */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    /* Slate text on white is thin at default rasterisation; smoothing keeps
+       dense tables legible. */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Headings are tracked slightly tight -- the system stack is a touch wide at
+     display sizes, and tightening restores the compact console feel. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-tight;
+  }
+
+  ::selection {
+    background-color: hsl(var(--primary) / 0.14);
+  }
+
+  /* Every focusable thing gets the same visible ring. Keyboard operation is a
+     baseline requirement here, not an accessibility extra: an operator working
+     a queue of approvals will tab through it. */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
+/*
+ * Thin, self-effacing scrollbars. The console has several independently
+ * scrolling panes (agent trace, audit ledger, JSON payloads) and default
+ * Windows/Chrome scrollbars are wide enough to become the loudest element in a
+ * small panel.
+ */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 9999px;
+    /* Transparent border + content-box clipping renders an 4px thumb inside a
+       10px hit target: easy to grab, quiet to look at. */
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
